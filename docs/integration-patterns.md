@@ -1,4 +1,4 @@
-﻿# Integration Patterns
+# Integration Patterns
 
 This document outlines high-level integration patterns for fintechs, banks, and payment companies evaluating en3.
 

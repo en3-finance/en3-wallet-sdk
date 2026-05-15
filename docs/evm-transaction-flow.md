@@ -1,4 +1,4 @@
-﻿# EVM Transaction Flow
+# EVM Transaction Flow
 
 This document describes a public, high-level EVM transaction lifecycle for SDK examples.
 

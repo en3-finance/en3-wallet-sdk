@@ -1,4 +1,4 @@
-﻿# Node Example
+# Node Example
 
 Placeholder directory for Node.js integration examples.
 

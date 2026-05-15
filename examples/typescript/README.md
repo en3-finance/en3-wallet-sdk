@@ -1,4 +1,4 @@
-﻿# TypeScript Example
+# TypeScript Example
 
 Placeholder directory for TypeScript-first SDK examples.
 

@@ -1,4 +1,4 @@
-﻿# en3-wallet-sdk
+# en3-wallet-sdk
 
 Public SDK boundary and integration examples for en3 enterprise wallet infrastructure.
 

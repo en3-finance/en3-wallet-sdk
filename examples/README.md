@@ -1,4 +1,4 @@
-﻿# Examples
+# Examples
 
 Placeholder directory for public SDK examples.
 
