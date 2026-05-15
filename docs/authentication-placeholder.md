@@ -1,4 +1,4 @@
-﻿# Authentication Placeholder
+# Authentication Placeholder
 
 This repository uses authentication placeholders only.
 

@@ -1,4 +1,4 @@
-﻿# Overview
+# Overview
 
 The en3 wallet SDK repository is the public integration boundary for teams evaluating en3 enterprise wallet infrastructure.
 

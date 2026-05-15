@@ -1,4 +1,4 @@
-﻿# API Boundary
+# API Boundary
 
 The SDK should represent documented platform interfaces without exposing private implementation details.
 
