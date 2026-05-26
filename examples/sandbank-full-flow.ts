@@ -7,12 +7,12 @@ const client = new En3Client({
 });
 
 const organization = await client.organizations.create({
-  name: "Reference Bank"
+  name: "SandBank"
 });
 
 const user = await client.users.create({
   organizationId: organization.id,
-  externalUserId: "core-user-001"
+  externalUserId: "sandbank-user-000001"
 });
 
 const wallet = await client.wallets.create({
@@ -23,13 +23,13 @@ const wallet = await client.wallets.create({
 
 const address = await client.wallets.createAddress(wallet.id, {
   organizationId: organization.id,
-  networkCode: "sandbox-base-sepolia",
-  assetCode: "USDC"
+  assetCode: "USDC",
+  networkCode: "sandbox-base-sepolia"
 });
 
 const policy = await client.policies.create({
   organizationId: organization.id,
-  name: "High value stablecoin transfer approval",
+  name: "SandBank approval threshold",
   approvalThreshold: "10000.00",
   blockThreshold: "50000.00"
 });
@@ -39,8 +39,8 @@ const transaction = await client.transactions.create({
   walletId: wallet.id,
   type: "withdrawal",
   assetCode: "USDC",
-  amount: "12500.00",
   networkCode: "sandbox-base-sepolia",
+  amount: "12500.00",
   destinationAddress: "sandbox_destination_sandbank_000001",
   idempotencyKey: "sandbank-txn-000001"
 });
@@ -49,14 +49,17 @@ const simulation = await client.transactions.simulate(transaction.id);
 const approval =
   simulation.policyDecision.outcome === "approval_required"
     ? await client.transactions.approve(transaction.id, {
-        decidedBy: "admin_001",
+        decidedBy: "usr_sandbox_operator_000001",
         decision: "approve",
-        note: "Sandbox approval for reference flow."
+        note: "Sandbox approval for SandBank demo flow."
       })
     : undefined;
 
-const auditEvents = await client.auditEvents.list({
-  organizationId: organization.id
+const auditEvents = await client.auditEvents.list({ organizationId: organization.id });
+const webhookEndpoint = await client.webhookEndpoints.create({
+  organizationId: organization.id,
+  url: "https://webhooks.sandbank.example/en3",
+  events: ["transaction.settled", "reconciliation.updated", "audit.event_created"]
 });
 
 console.log({
@@ -68,5 +71,6 @@ console.log({
   transaction,
   simulation,
   approval,
-  auditEvents
+  auditEvents,
+  webhookEndpoint
 });

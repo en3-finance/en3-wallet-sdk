@@ -50,7 +50,7 @@ export function verifySandboxWebhookSignature<TEvent extends WebhookEvent = Webh
     });
   }
 
-  const event = parseWebhookEvent<TEvent>(rawBodyToString(input.rawBody));
+  const event = parseSandboxWebhookEvent<TEvent>(input.rawBody);
 
   if (event.id !== eventId) {
     throw new En3WebhookVerificationError("Webhook event id header does not match payload", {
@@ -65,6 +65,12 @@ export function verifySandboxWebhookSignature<TEvent extends WebhookEvent = Webh
   }
 
   return event;
+}
+
+export function parseSandboxWebhookEvent<TEvent extends WebhookEvent = WebhookEvent>(
+  rawBody: string | Uint8Array
+): TEvent {
+  return parseWebhookEvent<TEvent>(rawBodyToString(rawBody));
 }
 
 function requiredHeader(headers: WebhookHeaders, name: string): string {

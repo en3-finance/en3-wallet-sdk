@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 import { En3Client, type FetchLike } from "../src/index.js";
 
 describe("full sandbox flow", () => {
-  it("runs the reference bank customer flow against mock responses", async () => {
+  it("runs the SandBank demo flow against mock responses", async () => {
     const fetchMock = vi
       .fn()
       .mockResolvedValueOnce(jsonResponse({ id: "org_001", name: "Reference Bank", status: "sandbox_active", createdAt: "2026-05-26T00:00:00Z" }, 201))
@@ -23,7 +23,7 @@ describe("full sandbox flow", () => {
       fetch: fetchMock as FetchLike
     });
 
-    const organization = await client.organizations.create({ name: "Reference Bank" });
+    const organization = await client.organizations.create({ name: "SandBank" });
     const user = await client.users.create({
       organizationId: organization.id,
       externalUserId: "core-user-001"
@@ -34,22 +34,25 @@ describe("full sandbox flow", () => {
       ownerId: user.id
     });
     const depositAddress = await client.wallets.createAddress(customerWallet.id, {
-      network: "base-sepolia",
-      asset: "USDC"
+      organizationId: organization.id,
+      networkCode: "sandbox-base-sepolia",
+      assetCode: "USDC"
     });
-    const policyResult = await client.policies.create({
+    const policyRecord = await client.policies.create({
       organizationId: organization.id,
       name: "High value stablecoin transfer approval",
-      rules: [{ type: "transaction_amount", asset: "USDC", threshold: "10000.00", action: "require_approval" }]
+      approvalThreshold: "10000.00",
+      blockThreshold: "50000.00"
     });
     const outgoingPayment = await client.transactions.create({
       organizationId: organization.id,
       walletId: customerWallet.id,
-      asset: "USDC",
+      type: "withdrawal",
+      assetCode: "USDC",
       amount: "12500.00",
-      network: "base-sepolia",
-      destinationAddress: "0x1111111111111111111111111111111111111111",
-      idempotencyKey: "partner-txn-0001"
+      networkCode: "sandbox-base-sepolia",
+      destinationAddress: "sandbox_destination_sandbank_000001",
+      idempotencyKey: "sandbank-txn-000001"
     });
     const simulated = await client.transactions.simulate(outgoingPayment.id);
     const approved = await client.transactions.approve(outgoingPayment.id, {
@@ -60,12 +63,12 @@ describe("full sandbox flow", () => {
     const webhook = await client.webhookEndpoints.create({
       organizationId: organization.id,
       url: "https://example.invalid/en3/webhooks",
-      events: ["transaction.settled", "audit.event_recorded"]
+      events: ["transaction.settled", "audit.event_created", "reconciliation.updated"]
     });
 
     expect(depositAddress.status).toBe("active");
-    expect(policyResult.rules[0]?.action).toBe("require_approval");
-    expect(simulated.result).toBe("approval_required");
+    expect(policyRecord.approvalThreshold).toBe("10000.00");
+    expect(simulated.policyDecision.outcome).toBe("approval_required");
     expect(approved.status).toBe("approved");
     expect(auditEvents.items).toHaveLength(1);
     expect(webhook.events).toContain("transaction.settled");
@@ -87,7 +90,7 @@ function wallet() {
     ownerType: "user",
     ownerId: "user_001",
     status: "active",
-    balances: [{ asset: "USDC", network: "base-sepolia", available: "0.00", pending: "0.00" }]
+    createdAt: "2026-05-26T00:00:02Z"
   };
 }
 
@@ -95,10 +98,12 @@ function address() {
   return {
     id: "addr_001",
     walletId: "wallet_001",
-    network: "base-sepolia",
-    asset: "USDC",
-    address: "0x2222222222222222222222222222222222222222",
-    status: "active"
+    organizationId: "org_001",
+    networkCode: "sandbox-base-sepolia",
+    assetCode: "USDC",
+    address: "sandbox_addr_sandbank_000001",
+    status: "active",
+    createdAt: "2026-05-26T00:00:03Z"
   };
 }
 
@@ -108,7 +113,9 @@ function policy() {
     organizationId: "org_001",
     name: "High value stablecoin transfer approval",
     status: "active",
-    rules: [{ type: "transaction_amount", asset: "USDC", threshold: "10000.00", action: "require_approval" }]
+    approvalThreshold: "10000.00",
+    blockThreshold: "50000.00",
+    createdAt: "2026-05-26T00:00:04Z"
   };
 }
 
@@ -118,29 +125,41 @@ function transaction() {
     organizationId: "org_001",
     walletId: "wallet_001",
     type: "withdrawal",
-    asset: "USDC",
+    assetCode: "USDC",
     amount: "12500.00",
-    network: "base-sepolia",
-    destinationAddress: "0x1111111111111111111111111111111111111111",
+    networkCode: "sandbox-base-sepolia",
+    destinationAddress: "sandbox_destination_sandbank_000001",
     status: "requires_approval",
-    policyResult: "approval_required",
     createdAt: "2026-05-26T00:00:02Z"
   };
 }
 
 function simulation() {
   return {
+    id: "sim_001",
     transactionId: "txn_001",
-    result: "approval_required",
     estimatedFee: "0.10",
-    policyResult: "approval_required",
-    riskSignals: ["amount_threshold"]
+    policyDecision: {
+      id: "pdc_001",
+      policyId: "policy_001",
+      transactionId: "txn_001",
+      outcome: "approval_required"
+    },
+    riskReview: {
+      id: "rrv_001",
+      transactionId: "txn_001",
+      decision: "allow",
+      signals: ["sandbox_amount_threshold"],
+      vendorIntegration: false
+    },
+    transactionStatus: "requires_approval"
   };
 }
 
 function approval() {
   return {
     id: "approval_001",
+    organizationId: "org_001",
     transactionId: "txn_001",
     status: "approved",
     decidedBy: "admin_001",
@@ -152,8 +171,6 @@ function auditEvent() {
   return {
     id: "audit_001",
     organizationId: "org_001",
-    actorType: "admin",
-    actorId: "admin_001",
     action: "transaction.approved",
     resourceType: "transaction",
     resourceId: "txn_001",
@@ -166,7 +183,8 @@ function webhookEndpoint() {
     id: "wh_001",
     organizationId: "org_001",
     url: "https://example.invalid/en3/webhooks",
-    events: ["transaction.settled", "audit.event_recorded"],
-    status: "active"
+    events: ["transaction.settled", "audit.event_created", "reconciliation.updated"],
+    status: "active",
+    createdAt: "2026-05-26T00:00:06Z"
   };
 }

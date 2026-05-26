@@ -4,7 +4,7 @@
 sandbox API contract.
 
 Status: public sandbox/reference artifact. This repository documents and exercises
-the En3 integration surface for partner engineers. Production cryptography,
+the En3 integration surface for integration engineers. Production cryptography,
 signing orchestration, policy enforcement, risk logic, ledger infrastructure,
 treasury execution, and customer deployments are private by design.
 
@@ -67,8 +67,9 @@ const wallet = await client.wallets.create({
 });
 
 const address = await client.wallets.createAddress(wallet.id, {
-  network: "base-sepolia",
-  asset: "USDC"
+  organizationId: organization.id,
+  networkCode: "sandbox-base-sepolia",
+  assetCode: "USDC"
 });
 
 console.log({ organization, user, wallet, address });
@@ -101,6 +102,7 @@ client.transactions.approve(transactionId, input);
 client.policies.create(input);
 client.auditEvents.list({ organizationId });
 client.webhookEndpoints.create(input);
+client.webhooks.parseEvent(rawBody);
 client.webhooks.verifySignature(input);
 ```
 
@@ -173,6 +175,10 @@ const event = client.webhooks.verifySignature({
 - [`examples/approve-transaction.ts`](examples/approve-transaction.ts)
 - [`examples/handle-webhook.ts`](examples/handle-webhook.ts)
 - [`examples/full-bank-customer-flow.ts`](examples/full-bank-customer-flow.ts)
+- [`examples/sandbank-create-wallet.ts`](examples/sandbank-create-wallet.ts)
+- [`examples/sandbank-payment-with-approval.ts`](examples/sandbank-payment-with-approval.ts)
+- [`examples/sandbank-handle-webhook.ts`](examples/sandbank-handle-webhook.ts)
+- [`examples/sandbank-full-flow.ts`](examples/sandbank-full-flow.ts)
 
 ## Related En3 Repositories
 

@@ -9,8 +9,9 @@ const client = new En3Client({
 const walletId = process.env.EN3_SANDBOX_WALLET_ID ?? "wallet_001";
 
 const address = await client.wallets.createAddress(walletId, {
-  network: "base-sepolia",
-  asset: "USDC"
+  organizationId: process.env.EN3_SANDBOX_ORGANIZATION_ID ?? "org_sandbox_000001",
+  networkCode: "sandbox-base-sepolia",
+  assetCode: "USDC"
 });
 
 console.log({ address });

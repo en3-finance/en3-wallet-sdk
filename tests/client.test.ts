@@ -38,12 +38,13 @@ describe("En3Client request construction", () => {
     });
     const fetchedWallet = await client.wallets.get(createdWallet.id);
     const createdAddress = await client.wallets.createAddress(createdWallet.id, {
-      network: "base-sepolia",
-      asset: "USDC"
+      organizationId: organization.id,
+      networkCode: "sandbox-base-sepolia",
+      assetCode: "USDC"
     });
 
-    expect(createdAddress.address).toBe("0x2222222222222222222222222222222222222222");
-    expect(fetchedWallet.balances[0]?.asset).toBe("USDC");
+    expect(createdAddress.address).toBe("sandbox_addr_sandbank_000001");
+    expect(fetchedWallet.status).toBe("active");
     expect(fetchMock).toHaveBeenCalledTimes(5);
     expectCall(fetchMock, 0, "POST", "/organizations", { name: "Reference Bank" });
     expectCall(fetchMock, 1, "POST", "/users", {
@@ -57,8 +58,9 @@ describe("En3Client request construction", () => {
     });
     expectCall(fetchMock, 3, "GET", "/wallets/wallet_001");
     expectCall(fetchMock, 4, "POST", "/wallets/wallet_001/addresses", {
-      network: "base-sepolia",
-      asset: "USDC"
+      organizationId: "org_001",
+      networkCode: "sandbox-base-sepolia",
+      assetCode: "USDC"
     });
   });
 
@@ -78,16 +80,17 @@ describe("En3Client request construction", () => {
       client.transactions.create({
         organizationId: "org_001",
         walletId: "wallet_001",
-        asset: "USDC",
+        type: "withdrawal",
+        assetCode: "USDC",
         amount: "12500.00",
-        network: "base-sepolia",
-        destinationAddress: "0x1111111111111111111111111111111111111111",
-        idempotencyKey: "partner-txn-0001"
+        networkCode: "sandbox-base-sepolia",
+        destinationAddress: "sandbox_destination_sandbank_000001",
+        idempotencyKey: "sandbank-txn-000001"
       })
     ).resolves.toMatchObject({ id: "txn_001", status: "requires_approval" });
 
     await expect(client.transactions.simulate("txn_001")).resolves.toMatchObject({
-      result: "approval_required"
+      policyDecision: { outcome: "approval_required" }
     });
     await expect(
       client.transactions.approve("txn_001", {
@@ -100,10 +103,11 @@ describe("En3Client request construction", () => {
       client.transactions.create({
         organizationId: "org_001",
         walletId: "wallet_001",
-        asset: "USDC",
+        type: "withdrawal",
+        assetCode: "USDC",
         amount: "",
-        network: "base-sepolia",
-        destinationAddress: "0x1111111111111111111111111111111111111111"
+        networkCode: "sandbox-base-sepolia",
+        destinationAddress: "sandbox_destination_sandbank_000001"
       })
     ).rejects.toBeInstanceOf(En3ValidationError);
 
@@ -111,11 +115,12 @@ describe("En3Client request construction", () => {
     expectCall(fetchMock, 0, "POST", "/transactions", {
       organizationId: "org_001",
       walletId: "wallet_001",
-      asset: "USDC",
+      type: "withdrawal",
+      assetCode: "USDC",
       amount: "12500.00",
-      network: "base-sepolia",
-      destinationAddress: "0x1111111111111111111111111111111111111111",
-      idempotencyKey: "partner-txn-0001"
+      networkCode: "sandbox-base-sepolia",
+      destinationAddress: "sandbox_destination_sandbank_000001",
+      idempotencyKey: "sandbank-txn-000001"
     });
     expectCall(fetchMock, 1, "POST", "/transactions/txn_001/simulate");
     expectCall(fetchMock, 2, "POST", "/transactions/txn_001/approve", {
@@ -136,7 +141,8 @@ describe("En3Client request construction", () => {
       client.policies.create({
         organizationId: "org_001",
         name: "High value stablecoin transfer approval",
-        rules: [{ type: "transaction_amount", asset: "USDC", threshold: "10000.00", action: "require_approval" }]
+        approvalThreshold: "10000.00",
+        blockThreshold: "50000.00"
       })
     ).resolves.toMatchObject({ id: "policy_001", status: "active" });
 
@@ -154,7 +160,8 @@ describe("En3Client request construction", () => {
     expectCall(fetchMock, 0, "POST", "/policies", {
       organizationId: "org_001",
       name: "High value stablecoin transfer approval",
-      rules: [{ type: "transaction_amount", asset: "USDC", threshold: "10000.00", action: "require_approval" }]
+      approvalThreshold: "10000.00",
+      blockThreshold: "50000.00"
     });
     expect(fetchMock.mock.calls[1]?.[0]).toBe(`${baseUrl}/audit-events?organizationId=org_001`);
     expectCall(fetchMock, 2, "POST", "/webhook-endpoints", {
@@ -208,7 +215,7 @@ function wallet() {
     ownerType: "user",
     ownerId: "user_001",
     status: "active",
-    balances: [{ asset: "USDC", network: "base-sepolia", available: "0.00", pending: "0.00" }]
+    createdAt: "2026-05-26T00:00:02Z"
   };
 }
 
@@ -216,10 +223,12 @@ function address() {
   return {
     id: "addr_001",
     walletId: "wallet_001",
-    network: "base-sepolia",
-    asset: "USDC",
-    address: "0x2222222222222222222222222222222222222222",
-    status: "active"
+    organizationId: "org_001",
+    networkCode: "sandbox-base-sepolia",
+    assetCode: "USDC",
+    address: "sandbox_addr_sandbank_000001",
+    status: "active",
+    createdAt: "2026-05-26T00:00:03Z"
   };
 }
 
@@ -229,29 +238,41 @@ function transaction() {
     organizationId: "org_001",
     walletId: "wallet_001",
     type: "withdrawal",
-    asset: "USDC",
+    assetCode: "USDC",
     amount: "12500.00",
-    network: "base-sepolia",
-    destinationAddress: "0x1111111111111111111111111111111111111111",
+    networkCode: "sandbox-base-sepolia",
+    destinationAddress: "sandbox_destination_sandbank_000001",
     status: "requires_approval",
-    policyResult: "approval_required",
     createdAt: "2026-05-26T00:00:02Z"
   };
 }
 
 function simulation() {
   return {
+    id: "sim_001",
     transactionId: "txn_001",
-    result: "approval_required",
     estimatedFee: "0.10",
-    policyResult: "approval_required",
-    riskSignals: ["amount_threshold"]
+    policyDecision: {
+      id: "pdc_001",
+      policyId: "policy_001",
+      transactionId: "txn_001",
+      outcome: "approval_required"
+    },
+    riskReview: {
+      id: "risk_001",
+      transactionId: "txn_001",
+      decision: "allow",
+      signals: ["sandbox_amount_threshold"],
+      vendorIntegration: false
+    },
+    transactionStatus: "requires_approval"
   };
 }
 
 function approval() {
   return {
     id: "approval_001",
+    organizationId: "org_001",
     transactionId: "txn_001",
     status: "approved",
     decidedBy: "admin_001",
@@ -265,7 +286,9 @@ function policy() {
     organizationId: "org_001",
     name: "High value stablecoin transfer approval",
     status: "active",
-    rules: [{ type: "transaction_amount", asset: "USDC", threshold: "10000.00", action: "require_approval" }]
+    approvalThreshold: "10000.00",
+    blockThreshold: "50000.00",
+    createdAt: "2026-05-26T00:00:05Z"
   };
 }
 
@@ -273,8 +296,6 @@ function auditEvent() {
   return {
     id: "audit_001",
     organizationId: "org_001",
-    actorType: "admin",
-    actorId: "admin_001",
     action: "transaction.approved",
     resourceType: "transaction",
     resourceId: "txn_001",
@@ -288,6 +309,7 @@ function webhookEndpoint() {
     organizationId: "org_001",
     url: "https://example.invalid/en3/webhooks",
     events: ["transaction.settled"],
-    status: "active"
+    status: "active",
+    createdAt: "2026-05-26T00:00:06Z"
   };
 }

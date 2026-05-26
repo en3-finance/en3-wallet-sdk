@@ -6,7 +6,11 @@ const client = new En3Client({
   environment: "sandbox"
 });
 
-export function verifyWebhook(rawBody: string, headers: Headers): WebhookEvent {
+export function parseSandBankWebhook(rawBody: string): WebhookEvent {
+  return client.webhooks.parseEvent(rawBody);
+}
+
+export function verifySandBankWebhook(rawBody: string, headers: Headers): WebhookEvent {
   return client.webhooks.verifySignature({
     rawBody,
     headers,
@@ -14,30 +18,18 @@ export function verifyWebhook(rawBody: string, headers: Headers): WebhookEvent {
   });
 }
 
-export function parseWebhook(rawBody: string): WebhookEvent {
-  return client.webhooks.parseEvent(rawBody);
-}
-
-export function handleWebhook(event: WebhookEvent) {
+export function handleSandBankWebhook(event: WebhookEvent) {
   switch (event.type) {
-    case "organization.created":
-    case "user.created":
-    case "wallet.created":
-    case "address.created":
-    case "policy.created":
-    case "transaction.submitted":
-    case "transaction.simulated":
     case "transaction.requires_approval":
     case "transaction.approved":
     case "transaction.signing":
     case "transaction.signed":
     case "transaction.broadcast":
     case "transaction.settled":
-    case "transaction.failed":
     case "reconciliation.updated":
     case "audit.event_created":
-      return { accepted: true, eventId: event.id };
+      return { accepted: true, eventId: event.id, type: event.type };
     default:
-      return { accepted: false, eventId: event.id };
+      return { accepted: true, eventId: event.id, type: event.type };
   }
 }

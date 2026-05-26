@@ -16,8 +16,10 @@ export type OrganizationStatus = "sandbox_active" | "suspended";
 export interface Organization {
   id: string;
   name: string;
+  mode?: "sandbox";
   status: OrganizationStatus;
   createdAt: string;
+  reconciliation?: ReconciliationEntry;
 }
 
 export interface CreateOrganizationRequest {
@@ -39,7 +41,7 @@ export interface CreateUserRequest {
   externalUserId: string;
 }
 
-export type WalletStatus = "active" | "frozen" | "closed";
+export type WalletStatus = "created" | "address_issued" | "active" | "suspended" | "closed";
 
 export interface Balance {
   asset: string;
@@ -54,7 +56,8 @@ export interface Wallet {
   ownerType: OwnerType;
   ownerId: string;
   status: WalletStatus;
-  balances: Balance[];
+  createdAt: string;
+  balances?: Balance[];
 }
 
 export interface CreateWalletRequest {
@@ -68,47 +71,53 @@ export type AddressStatus = "active" | "archived";
 export interface Address {
   id: string;
   walletId: string;
-  network: string;
+  organizationId: string;
+  assetCode: string;
+  networkCode: string;
   address: string;
   status: AddressStatus;
+  createdAt: string;
 }
 
 export interface CreateAddressRequest {
-  network: string;
-  asset: string;
+  organizationId: string;
+  assetCode: string;
+  networkCode: string;
 }
 
-export type TransactionType = "deposit" | "withdrawal" | "transfer";
+export type TransactionType = "withdrawal" | "transfer";
 export type TransactionStatus =
   | "submitted"
   | "simulated"
   | "requires_approval"
   | "approved"
+  | "signing"
+  | "signed"
   | "broadcast"
   | "settled"
-  | "failed";
-export type PolicyResult = "pass" | "approval_required" | "review_required" | "blocked";
+  | "failed"
+  | "cancelled";
 
 export interface Transaction {
   id: string;
   organizationId: string;
   walletId: string;
   type: TransactionType;
-  asset: string;
+  assetCode: string;
   amount: string;
-  network: string;
+  networkCode: string;
   destinationAddress?: string;
   status: TransactionStatus;
-  policyResult?: PolicyResult;
   createdAt: string;
 }
 
 export interface CreateTransactionRequest {
   organizationId: string;
   walletId: string;
-  asset: string;
+  type: TransactionType;
+  assetCode: string;
   amount: string;
-  network: string;
+  networkCode: string;
   destinationAddress: string;
   idempotencyKey?: string;
 }
@@ -116,19 +125,37 @@ export interface CreateTransactionRequest {
 export type SubmitTransactionRequest = CreateTransactionRequest;
 
 export type SimulationResult = "allowed" | "approval_required" | "review_required" | "blocked";
+export type RiskDecision = "allow" | "review_required" | "block";
 
 export interface TransactionSimulation {
+  id: string;
   transactionId: string;
-  result: SimulationResult;
   estimatedFee: string;
-  policyResult: string;
-  riskSignals?: string[];
+  policyDecision: PolicyDecision;
+  riskReview: RiskReview;
+  transactionStatus: TransactionStatus;
+}
+
+export interface PolicyDecision {
+  id: string;
+  policyId: string;
+  transactionId: string;
+  outcome: SimulationResult;
+}
+
+export interface RiskReview {
+  id: string;
+  transactionId: string;
+  decision: RiskDecision;
+  signals: string[];
+  vendorIntegration: false;
 }
 
 export interface Approval {
   id: string;
+  organizationId: string;
   transactionId: string;
-  status: "approved" | "rejected";
+  status: "not_required" | "pending" | "approved" | "rejected" | "expired";
   decidedBy: string;
   note?: string;
   decidedAt: string;
@@ -156,13 +183,16 @@ export interface Policy {
   organizationId: string;
   name: string;
   status: PolicyStatus;
-  rules: PolicyRule[];
+  approvalThreshold: string;
+  blockThreshold: string;
+  createdAt: string;
 }
 
 export interface CreatePolicyRequest {
   organizationId: string;
   name: string;
-  rules: PolicyRule[];
+  approvalThreshold: string;
+  blockThreshold: string;
 }
 
 export type ActorType = "user" | "admin" | "system";
@@ -170,8 +200,6 @@ export type ActorType = "user" | "admin" | "system";
 export interface AuditEvent {
   id: string;
   organizationId: string;
-  actorType: ActorType;
-  actorId?: string;
   action: string;
   resourceType: string;
   resourceId: string;
@@ -192,6 +220,8 @@ export interface WebhookEndpoint {
   url: string;
   events: WebhookEventType[];
   status: "active" | "disabled";
+  lastDeliveryStatus?: "pending" | "delivered" | "failed" | "retrying";
+  createdAt: string;
 }
 
 export interface CreateWebhookEndpointRequest {
@@ -203,16 +233,20 @@ export interface CreateWebhookEndpointRequest {
 export type WebhookEventType =
   | "wallet.created"
   | "address.created"
+  | "policy.created"
+  | "organization.created"
+  | "user.created"
   | "transaction.submitted"
   | "transaction.simulated"
   | "transaction.requires_approval"
   | "transaction.approved"
+  | "transaction.signing"
+  | "transaction.signed"
   | "transaction.broadcast"
   | "transaction.settled"
   | "transaction.failed"
-  | "risk.review_required"
-  | "reconciliation.report_updated"
-  | "audit.event_recorded";
+  | "audit.event_created"
+  | "reconciliation.updated";
 
 export interface WebhookEvent<TData extends Record<string, unknown> = Record<string, unknown>> {
   id: string;
@@ -236,4 +270,15 @@ export interface CreateSandboxWebhookSignatureInput {
   rawBody: string | Uint8Array;
   timestamp: string;
   secret: string;
+}
+
+export type ReconciliationStatus = "pending" | "matched" | "exception" | "resolved";
+
+export interface ReconciliationEntry {
+  id: string;
+  organizationId: string;
+  transactionId: string;
+  status: ReconciliationStatus;
+  mockReferenceOnly: true;
+  updatedAt: string;
 }

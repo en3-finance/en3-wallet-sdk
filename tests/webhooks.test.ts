@@ -47,6 +47,20 @@ describe("sandbox webhook signatures", () => {
     ).toMatchObject({ id: "evt_001" });
   });
 
+  it("parses webhook events without verifying signatures", () => {
+    const client = new En3Client({
+      apiKey: "sandbox-token",
+      baseUrl: "http://localhost:8787",
+      environment: "local",
+      fetch: async () => new Response("{}")
+    });
+
+    expect(client.webhooks.parseEvent(webhookBody())).toMatchObject({
+      id: "evt_001",
+      type: "transaction.settled"
+    });
+  });
+
   it("fails closed for invalid signatures, stale timestamps, missing headers, and malformed payloads", () => {
     const rawBody = webhookBody();
     const timestamp = new Date().toISOString();
@@ -108,8 +122,8 @@ function webhookBody(): string {
     transactionId: "txn_001",
     walletId: "wallet_001",
     status: "settled",
-    asset: "USDC",
+    assetCode: "USDC",
     amount: "12500.00",
-    network: "base-sepolia"
+    networkCode: "sandbox-base-sepolia"
   });
 }

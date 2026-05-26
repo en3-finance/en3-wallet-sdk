@@ -7,13 +7,14 @@ const client = new En3Client({
 });
 
 const transaction = await client.transactions.create({
-  organizationId: process.env.EN3_SANDBOX_ORGANIZATION_ID ?? "org_sandbox_001",
+  organizationId: process.env.EN3_SANDBOX_ORGANIZATION_ID ?? "org_sandbox_000001",
   walletId: process.env.EN3_SANDBOX_WALLET_ID ?? "wallet_001",
-  asset: "USDC",
+  type: "withdrawal",
+  assetCode: "USDC",
   amount: "12500.00",
-  network: "base-sepolia",
-  destinationAddress: "0x1111111111111111111111111111111111111111",
-  idempotencyKey: "partner-txn-0001"
+  networkCode: "sandbox-base-sepolia",
+  destinationAddress: "sandbox_destination_sandbank_000001",
+  idempotencyKey: "sandbank-txn-000001"
 });
 
 const simulation = await client.transactions.simulate(transaction.id);

@@ -4,6 +4,7 @@ import {
   createEn3ApiError
 } from "./errors.js";
 import {
+  parseSandboxWebhookEvent,
   verifySandboxWebhookSignature
 } from "./webhooks.js";
 import type {
@@ -79,6 +80,9 @@ export class En3Client {
       this.request("/webhook-endpoints", { method: "POST", body: input })
   };
   readonly webhooks = {
+    parseEvent: <TEvent extends WebhookEvent = WebhookEvent>(
+      rawBody: string | Uint8Array
+    ): TEvent => parseSandboxWebhookEvent<TEvent>(rawBody),
     verifySignature: <TEvent extends WebhookEvent = WebhookEvent>(
       input: WebhookVerificationInput
     ): TEvent => verifySandboxWebhookSignature<TEvent>(input)
