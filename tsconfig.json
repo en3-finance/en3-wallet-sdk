@@ -3,10 +3,10 @@
     "target": "ES2022",
     "module": "ES2022",
     "moduleResolution": "Bundler",
-    "declaration": true,
-    "outDir": "dist",
+    "lib": ["ES2022", "DOM"],
     "strict": true,
-    "skipLibCheck": true
+    "skipLibCheck": true,
+    "types": ["node", "vitest"]
   },
-  "include": ["src/**/*.ts", "examples/**/*.ts"]
+  "include": ["src/**/*.ts", "examples/**/*.ts", "tests/**/*.ts", "vitest.config.ts"]
 }

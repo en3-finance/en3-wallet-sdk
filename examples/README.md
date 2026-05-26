@@ -1,6 +1,15 @@
 # Examples
 
-Placeholder directory for public SDK examples.
+These examples are public sandbox/reference flows. They use placeholder URLs,
+tokens, identifiers, and mock-friendly payloads only.
 
-Examples should use placeholder configuration only and must not include production endpoints, credentials, private keys, seed phrases, customer data, or private platform implementation details.
+- `create-wallet.ts`: create an organization, user, and wallet.
+- `create-address.ts`: create a deposit address for a wallet.
+- `submit-policy-aware-transaction.ts`: submit and simulate a sandbox transaction.
+- `approve-transaction.ts`: approve a sandbox transaction that requires approval.
+- `handle-webhook.ts`: verify and route sandbox HMAC webhook events.
+- `full-bank-customer-flow.ts`: run the reference bank customer flow end to end.
 
+The examples do not perform production signing, custody, private key management,
+ledger updates, treasury execution, compliance-vendor calls, or customer deployment
+operations.

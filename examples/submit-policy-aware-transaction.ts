@@ -1,13 +1,14 @@
-import { En3Client } from "../src";
+import { En3Client } from "../src/index.js";
 
 const client = new En3Client({
-  baseUrl: "https://sandbox.api.en3.example",
-  token: process.env.EN3_SANDBOX_TOKEN ?? "sandbox-token"
+  apiKey: process.env.EN3_SANDBOX_API_KEY ?? "sandbox-token",
+  baseUrl: process.env.EN3_SANDBOX_BASE_URL ?? "https://sandbox.api.en3.example",
+  environment: "sandbox"
 });
 
-const transaction = await client.submitTransaction({
-  organizationId: "org_sandbox_001",
-  walletId: "wallet_001",
+const transaction = await client.transactions.create({
+  organizationId: process.env.EN3_SANDBOX_ORGANIZATION_ID ?? "org_sandbox_001",
+  walletId: process.env.EN3_SANDBOX_WALLET_ID ?? "wallet_001",
   asset: "USDC",
   amount: "12500.00",
   network: "base-sepolia",
@@ -15,14 +16,6 @@ const transaction = await client.submitTransaction({
   idempotencyKey: "partner-txn-0001"
 });
 
-const simulation = await client.simulateTransaction(transaction.id);
-
-if (simulation.result === "approval_required") {
-  await client.approveTransaction(transaction.id, {
-    decidedBy: "admin_001",
-    decision: "approve",
-    note: "Sandbox approval for reference flow."
-  });
-}
+const simulation = await client.transactions.simulate(transaction.id);
 
 console.log({ transaction, simulation });

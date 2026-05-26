@@ -1,0 +1,13 @@
+node_modules/
+coverage/
+tests/
+specs/
+.github/
+.specify/
+.agents/
+src/
+examples/
+docs/
+*.log
+.env
+.env.*
