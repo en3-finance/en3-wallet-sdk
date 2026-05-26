@@ -1,8 +1,10 @@
 import type {
   Address,
+  Approval,
   CreateAddressRequest,
   CreateWalletRequest,
   En3ClientConfig,
+  ReconciliationReport,
   SubmitTransactionRequest,
   Transaction,
   TransactionSimulation,
@@ -14,6 +16,10 @@ export class En3Client {
 
   createWallet(input: CreateWalletRequest): Promise<Wallet> {
     return this.request("/wallets", { method: "POST", body: input });
+  }
+
+  getWallet(walletId: string): Promise<Wallet> {
+    return this.request(`/wallets/${walletId}`, { method: "GET" });
   }
 
   createAddress(walletId: string, input: CreateAddressRequest): Promise<Address> {
@@ -28,8 +34,12 @@ export class En3Client {
     return this.request(`/transactions/${transactionId}/simulate`, { method: "POST" });
   }
 
-  approveTransaction(transactionId: string, input: { decidedBy: string; decision: "approve" | "reject"; note?: string }) {
+  approveTransaction(transactionId: string, input: { decidedBy: string; decision: "approve" | "reject"; note?: string }): Promise<Approval> {
     return this.request(`/transactions/${transactionId}/approve`, { method: "POST", body: input });
+  }
+
+  getReconciliationReport(reportId: string): Promise<ReconciliationReport> {
+    return this.request(`/reconciliation-reports/${reportId}`, { method: "GET" });
   }
 
   private async request<T>(path: string, options: { method: string; body?: unknown }): Promise<T> {
